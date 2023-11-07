@@ -23,22 +23,33 @@ def train(policyNet,optimizer):
 
 def main():
     env = gym.make('FrozenLake-v1')
+    count = 0
     in_dim = env.observation_space.n
     out_dim = env.action_space.n
     policyNet = PolicyNetwork.PolicyNetwork(in_dim,out_dim)
     optimizer = torch.optim.Adam(policyNet.parameters(),lr=0.01)
-    for epi in range(200000):
+    for epi in range(100000):
         state = env.reset()
         unwrapped_state = state[0]
         for i in range(100):
             action = policyNet.act(unwrapped_state,in_dim)
             unwrapped_state,reward,terminated, truncated, info = env.step(action)
-            # if (terminated or truncated) and (reward == 0):
-            #     reward = -50
-            # if not (terminated or truncated):
-            #     reward = -1
-            # if (terminated or truncated) and (reward == 1):
-            #     reward = 10000
+            if terminated or truncated:
+                if reward == 0:
+                    reward = -100
+                elif reward == 1:
+                    reward = 500 + (100-i)*5
+            else:
+                if unwrapped_state in [11,14]:
+                    reward = 5
+                elif unwrapped_state in [7,10,13]:
+                    reward = 4
+                elif unwrapped_state in [3,6,9,12]:
+                    reward = 3
+                elif unwrapped_state in [2,5,8]:
+                    reward = 2
+                elif unwrapped_state in [1,4]:
+                    reward = 1
             policyNet.rewards.append(reward)
             env.render()
             if terminated or truncated:
@@ -47,7 +58,9 @@ def main():
         total_reward = sum(policyNet.rewards)
         solved = (unwrapped_state == 15)
         policyNet.onpolicy_reset()
-        print(f'Episode {epi}, loss {loss}, total_reward: {total_reward}, solved: {solved}')
-
+        if solved:
+            count = count + 1
+            print(f'Episode {epi}, loss {loss}, total_reward: {total_reward}, solved: {solved}')
+    print(count)
 if __name__ == '__main__':
     main()
