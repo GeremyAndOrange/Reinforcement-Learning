@@ -28,7 +28,7 @@ def plot(lossList):
     matplotlib.pyplot.title('Loss over time')
     matplotlib.pyplot.xlabel('Index')
     matplotlib.pyplot.ylabel('Loss')
-    matplotlib.pyplot.show()
+    matplotlib.pyplot.show(block=True)
 
 
 def main():
