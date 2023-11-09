@@ -2,6 +2,7 @@ import gym
 import numpy
 import torch
 import PolicyNetwork
+import matplotlib.pyplot
 
 gamma = 0.99
 
@@ -21,9 +22,19 @@ def train(policyNet,optimizer):
     optimizer.step()
     return loss
 
+def plot(lossList):
+    matplotlib.pyplot.figure(figsize=(10, 6))
+    matplotlib.pyplot.plot(range(len(lossList)), lossList, marker='o')
+    matplotlib.pyplot.title('Loss over time')
+    matplotlib.pyplot.xlabel('Index')
+    matplotlib.pyplot.ylabel('Loss')
+    matplotlib.pyplot.show()
+
+
 def main():
     env = gym.make('FrozenLake-v1')
     count = 0
+    lossList = []
     in_dim = env.observation_space.n
     out_dim = env.action_space.n
     policyNet = PolicyNetwork.PolicyNetwork(in_dim,out_dim)
@@ -58,9 +69,12 @@ def main():
         total_reward = sum(policyNet.rewards)
         solved = (unwrapped_state == 15)
         policyNet.onpolicy_reset()
+        lossList.append(loss.item())
         if solved:
             count = count + 1
             print(f'Episode {epi}, loss {loss}, total_reward: {total_reward}, solved: {solved}')
     print(count)
+    plot(lossList)
+
 if __name__ == '__main__':
     main()
