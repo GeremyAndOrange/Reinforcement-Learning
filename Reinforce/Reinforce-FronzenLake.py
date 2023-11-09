@@ -28,7 +28,7 @@ def main():
     out_dim = env.action_space.n
     policyNet = PolicyNetwork.PolicyNetwork(in_dim,out_dim)
     optimizer = torch.optim.Adam(policyNet.parameters(),lr=0.01)
-    for epi in range(100000):
+    for epi in range(10000):
         state = env.reset()
         unwrapped_state = state[0]
         for i in range(100):

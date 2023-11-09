@@ -1,4 +1,3 @@
-import numpy
 import torch
 
 class PolicyNetwork(torch.nn.Module):
