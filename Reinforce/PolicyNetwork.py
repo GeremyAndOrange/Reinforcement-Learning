@@ -20,11 +20,8 @@ class PolicyNetwork(torch.nn.Module):
         pdparam = self.model(x)
         return pdparam
 
-    def act(self,state,in_dim):
+    def act(self,state):
         state = torch.as_tensor(state, dtype=torch.float32)
-        if state.dim() == 0 and in_dim is not None:
-            state = state.to(torch.int64)
-            state = torch.nn.functional.one_hot(state, num_classes=in_dim).float()
         pdparam = self.forward(state)
         pd = torch.distributions.Categorical(logits=pdparam)
         action = pd.sample()

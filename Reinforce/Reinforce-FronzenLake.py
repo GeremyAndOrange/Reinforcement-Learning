@@ -4,7 +4,7 @@ import torch
 import PolicyNetwork
 import matplotlib.pyplot
 
-gamma = 0.99
+gamma = 0.999
 
 def train(policyNet,optimizer):
     T = len(policyNet.rewards)
@@ -35,15 +35,17 @@ def main():
     env = gym.make('FrozenLake-v1')
     count = 0
     lossList = []
-    in_dim = env.observation_space.n
-    out_dim = env.action_space.n
+    in_dim = env.observation_space.n    # For a better neural network model, the one-dimensional state space input is passed through one_hot encoding to 16 dimensions
+    out_dim = env.action_space.n        # To get the probability of actions,the output of the neural network is the number of actions
     policyNet = PolicyNetwork.PolicyNetwork(in_dim,out_dim)
     optimizer = torch.optim.Adam(policyNet.parameters(),lr=0.01)
     for epi in range(10000):
         state = env.reset()
         unwrapped_state = state[0]
         for i in range(100):
-            action = policyNet.act(unwrapped_state,in_dim)
+            unwrapped_state = torch.as_tensor([unwrapped_state], dtype=torch.int64)
+            unwrapped_state = torch.nn.functional.one_hot(unwrapped_state, num_classes=in_dim).float()
+            action = policyNet.act(unwrapped_state)
             unwrapped_state,reward,terminated, truncated, info = env.step(action)
             if terminated or truncated:
                 if reward == 0:
@@ -69,9 +71,9 @@ def main():
         total_reward = sum(policyNet.rewards)
         solved = (unwrapped_state == 15)
         policyNet.onpolicy_reset()
-        lossList.append(loss.item())
         if solved:
             count = count + 1
+            lossList.append(loss.item())
             print(f'Episode {epi}, loss {loss}, total_reward: {total_reward}, solved: {solved}')
     print(count)
     plot(lossList)
