@@ -39,11 +39,11 @@ def main():
     out_dim = env.action_space.n        # To get the probability of actions,the output of the neural network is the number of actions
     policyNet = PolicyNetwork.PolicyNetwork(in_dim,out_dim)
     optimizer = torch.optim.Adam(policyNet.parameters(),lr=0.01)
-    for epi in range(10000):
+    for epi in range(30000):
         state = env.reset()
         unwrapped_state = state[0]
         for i in range(100):
-            unwrapped_state = torch.as_tensor([unwrapped_state], dtype=torch.int64)
+            unwrapped_state = torch.as_tensor(unwrapped_state, dtype=torch.int64)
             unwrapped_state = torch.nn.functional.one_hot(unwrapped_state, num_classes=in_dim).float()
             action = policyNet.act(unwrapped_state)
             unwrapped_state,reward,terminated, truncated, info = env.step(action)
