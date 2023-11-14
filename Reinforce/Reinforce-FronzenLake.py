@@ -22,6 +22,10 @@ def train(policyNet,optimizer):
     optimizer.step()
     return loss
 
+def getReward(reward):
+    calReward = 18 - ((reward // 4) - 3)**2 - ((reward % 4) - 3)**2
+    return calReward/10
+
 def plot(lossList):
     matplotlib.pyplot.figure(figsize=(10, 6))
     matplotlib.pyplot.plot(range(len(lossList)), lossList, marker='o')
@@ -29,7 +33,6 @@ def plot(lossList):
     matplotlib.pyplot.xlabel('Index')
     matplotlib.pyplot.ylabel('Loss')
     matplotlib.pyplot.show(block=True)
-
 
 def main():
     env = gym.make('FrozenLake-v1')
@@ -39,7 +42,7 @@ def main():
     out_dim = env.action_space.n        # To get the probability of actions,the output of the neural network is the number of actions
     policyNet = PolicyNetwork.PolicyNetwork(in_dim,out_dim)
     optimizer = torch.optim.Adam(policyNet.parameters(),lr=0.01)
-    for epi in range(30000):
+    for epi in range(10000):
         state = env.reset()
         unwrapped_state = state[0]
         for i in range(100):
@@ -47,22 +50,7 @@ def main():
             unwrapped_state = torch.nn.functional.one_hot(unwrapped_state, num_classes=in_dim).float()
             action = policyNet.act(unwrapped_state)
             unwrapped_state,reward,terminated, truncated, info = env.step(action)
-            if terminated or truncated:
-                if reward == 0:
-                    reward = -100
-                elif reward == 1:
-                    reward = 500 + (100-i)*5
-            else:
-                if unwrapped_state in [11,14]:
-                    reward = 5
-                elif unwrapped_state in [7,10,13]:
-                    reward = 4
-                elif unwrapped_state in [3,6,9,12]:
-                    reward = 3
-                elif unwrapped_state in [2,5,8]:
-                    reward = 2
-                elif unwrapped_state in [1,4]:
-                    reward = 1
+            reward = 100 + (100-i) if unwrapped_state == 15 else getReward(unwrapped_state)
             policyNet.rewards.append(reward)
             env.render()
             if terminated or truncated:
