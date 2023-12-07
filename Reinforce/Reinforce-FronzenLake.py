@@ -4,7 +4,7 @@ import torch
 import PolicyNetwork
 import matplotlib.pyplot
 
-gamma = 0.999
+gamma = 0.995
 
 def train(policyNet,optimizer):
     T = len(policyNet.rewards)
@@ -22,9 +22,9 @@ def train(policyNet,optimizer):
     optimizer.step()
     return loss
 
-def getReward(reward):
-    calReward = 18 - ((reward // 4) - 3)**2 - ((reward % 4) - 3)**2
-    return calReward/10
+def getReward(position):
+    positionList = {0:0,1:1,2:2,3:3,4:1,5:-40,6:3,7:-40,8:2,9:3,10:4,11:-40,12:-40,13:4,14:5,15:100}
+    return positionList[position]
 
 def plot(lossList):
     matplotlib.pyplot.figure(figsize=(10, 6))
@@ -42,15 +42,15 @@ def main():
     out_dim = env.action_space.n        # To get the probability of actions,the output of the neural network is the number of actions
     policyNet = PolicyNetwork.PolicyNetwork(in_dim,out_dim)
     optimizer = torch.optim.Adam(policyNet.parameters(),lr=0.01)
-    for epi in range(10000):
+    for epi in range(1000000):
         state = env.reset()
         unwrapped_state = state[0]
-        for i in range(100):
+        for i in range(20):
             unwrapped_state = torch.as_tensor(unwrapped_state, dtype=torch.int64)
             unwrapped_state = torch.nn.functional.one_hot(unwrapped_state, num_classes=in_dim).float()
             action = policyNet.act(unwrapped_state)
             unwrapped_state,reward,terminated, truncated, info = env.step(action)
-            reward = 100 + (100-i) if unwrapped_state == 15 else getReward(unwrapped_state)
+            reward = getReward(unwrapped_state)
             policyNet.rewards.append(reward)
             env.render()
             if terminated or truncated:
@@ -63,7 +63,7 @@ def main():
             count = count + 1
             lossList.append(loss.item())
             print(f'Episode {epi}, loss {loss}, total_reward: {total_reward}, solved: {solved}')
-    print(count)
+    print(count/10000)
     plot(lossList)
 
 if __name__ == '__main__':

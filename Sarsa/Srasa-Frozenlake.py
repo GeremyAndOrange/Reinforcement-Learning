@@ -45,7 +45,6 @@ def main():
     out_dim = 1                                             # For any (state,action) output a QValue
     QNet = QNetwork.QNetwork(in_dim,out_dim)
     optimizer = torch.optim.Adam(QNet.parameters(),lr=0.01)
-
     for epi in range(10000):
         state = env.reset()
         unwrappedState = state[0]
@@ -68,10 +67,10 @@ def main():
             nextQValue = QNet.forward(nextInputTensor)
             targetQValue = reward + gamma * nextQValue
             lossList.append(train(nextQValue,targetQValue,optimizer).item())
-            epsilon = max(epsilon * 0.9995, 0.01)
             env.render()
             if terminated or truncated:
                 break
+        epsilon = max(epsilon * 0.9995, 0.01)
         finalLoss = sum(lossList)
         finalReward = sum(rewardList)
         solved = (unwrappedState == 15)
