@@ -17,8 +17,7 @@ class PolicyNetwork(torch.nn.Module):
         self.rewards = []
     
     def forward(self,x):
-        pdparam = self.model(x)
-        return pdparam
+        return self.model(x)
 
     def act(self,state):
         state = torch.as_tensor(state, dtype=torch.float32).to(self.device)
