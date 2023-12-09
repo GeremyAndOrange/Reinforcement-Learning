@@ -1,7 +1,7 @@
-import torch
+import torch.nn
 
 class PolicyNetwork(torch.nn.Module):
-    def __init__(self, in_dim, out_dim) -> None:
+    def __init__(self, in_dim, out_dim, device) -> None:
         super(PolicyNetwork,self).__init__()
         layers = [
             torch.nn.Linear(in_dim,64),
@@ -10,7 +10,7 @@ class PolicyNetwork(torch.nn.Module):
             ]
         self.model = torch.nn.Sequential(*layers)
         self.onpolicy_reset()
-        self.train()
+        self.device = device
 
     def onpolicy_reset(self):
         self.log_probs = []
@@ -21,7 +21,7 @@ class PolicyNetwork(torch.nn.Module):
         return pdparam
 
     def act(self,state):
-        state = torch.as_tensor(state, dtype=torch.float32)
+        state = torch.as_tensor(state, dtype=torch.float32).to(self.device)
         pdparam = self.forward(state)
         pd = torch.distributions.Categorical(logits=pdparam)
         action = pd.sample()

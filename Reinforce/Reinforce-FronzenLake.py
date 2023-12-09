@@ -2,18 +2,16 @@ import gym
 import numpy
 import torch
 import PolicyNetwork
-import matplotlib.pyplot
-
-gamma = 0.995
+import time
 
 def train(policyNet,optimizer):
     T = len(policyNet.rewards)
     rets = numpy.empty(T,dtype=numpy.float32)
     future_ret = 0.0
     for t in reversed(range(T)):
-        future_ret = policyNet.rewards[t] + gamma * future_ret
+        future_ret = policyNet.rewards[t] + 0.999 * future_ret
         rets[t] = future_ret
-    rets = torch.tensor(rets)
+    rets = torch.tensor(rets).to(policyNet.device)
     log_probs = torch.stack(policyNet.log_probs)
     loss = - log_probs * rets
     loss = torch.sum(loss)
@@ -23,35 +21,26 @@ def train(policyNet,optimizer):
     return loss
 
 def getReward(position):
-    positionList = {0:0,1:1,2:2,3:3,4:1,5:-40,6:3,7:-40,8:2,9:3,10:4,11:-40,12:-40,13:4,14:5,15:100}
-    return positionList[position]
+    return position//4 + position%4
 
-def plot(lossList):
-    matplotlib.pyplot.figure(figsize=(10, 6))
-    matplotlib.pyplot.plot(range(len(lossList)), lossList, marker='o')
-    matplotlib.pyplot.title('Loss over time')
-    matplotlib.pyplot.xlabel('Index')
-    matplotlib.pyplot.ylabel('Loss')
-    matplotlib.pyplot.show(block=True)
-
-def main():
-    env = gym.make('FrozenLake-v1')
+def frozenLake(device,epoch):
+    env = gym.make('FrozenLake-v1',is_slippery=False)
     count = 0
-    lossList = []
-    in_dim = env.observation_space.n    # For a better neural network model, the one-dimensional state space input is passed through one_hot encoding to 16 dimensions
+    in_dim = 2                          # The dimension of the state space is 2
     out_dim = env.action_space.n        # To get the probability of actions,the output of the neural network is the number of actions
-    policyNet = PolicyNetwork.PolicyNetwork(in_dim,out_dim)
-    optimizer = torch.optim.Adam(policyNet.parameters(),lr=0.01)
-    for epi in range(1000000):
+    
+    policyNet = PolicyNetwork.PolicyNetwork(in_dim,out_dim,device)
+    policyNet.to(device)
+    optimizer = torch.optim.Adam(policyNet.parameters(),lr=0.005)
+
+    for epi in range(epoch):
         state = env.reset()
         unwrapped_state = state[0]
         for i in range(20):
-            unwrapped_state = torch.as_tensor(unwrapped_state, dtype=torch.int64)
-            unwrapped_state = torch.nn.functional.one_hot(unwrapped_state, num_classes=in_dim).float()
-            action = policyNet.act(unwrapped_state)
-            unwrapped_state,reward,terminated, truncated, info = env.step(action)
-            reward = getReward(unwrapped_state)
-            policyNet.rewards.append(reward)
+            positionX, positionY = unwrapped_state//4, unwrapped_state%4
+            action = policyNet.act([positionX,positionY])
+            unwrapped_state,reward,terminated, truncated, _ = env.step(action)
+            policyNet.rewards.append(getReward(unwrapped_state) + reward*100 - 3)
             env.render()
             if terminated or truncated:
                 break
@@ -59,12 +48,18 @@ def main():
         total_reward = sum(policyNet.rewards)
         solved = (unwrapped_state == 15)
         policyNet.onpolicy_reset()
+
         if solved:
             count = count + 1
-            lossList.append(loss.item())
             print(f'Episode {epi}, loss {loss}, total_reward: {total_reward}, solved: {solved}')
-    print(count/10000)
-    plot(lossList)
+    print(count/epoch)
+
+def main():
+    device = torch.device("cpu")
+    startTime = time.time()
+    frozenLake(device,10000)
+    endTime = time.time()
+    print(endTime-startTime)
 
 if __name__ == '__main__':
     main()
