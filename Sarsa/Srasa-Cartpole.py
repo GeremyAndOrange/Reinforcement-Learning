@@ -2,83 +2,65 @@ import gym
 import torch
 import numpy
 import QNetwork
-import matplotlib.pyplot
+import time
 
-epsilon = 0.9
-gamma = 0.9
-alpha = 0.05
-
-def train(predictions, targets, optimizer):
-    criterion = torch.nn.MSELoss()
-    loss = predictions + criterion(predictions, targets)*alpha
+def train(QNet, optimizer):
+    T, loss = len(QNet.rewards), []
+    for i in range(1,T):
+        singleLoss = (torch.tensor(QNet.rewards[i-1]) + 0.99 * torch.max(QNet.QTable[i]) - torch.max(QNet.QTable[i-1])) ** 2
+        loss.append(singleLoss.clone())
+    loss = torch.stack(loss)
+    loss = torch.sum(loss)
     optimizer.zero_grad()
     loss.backward()
     optimizer.step()
     return loss
 
-def getTensor(state,action,action_dim):
-    stateTensor = torch.as_tensor(state, dtype=torch.int64)
-    actionTensor = torch.as_tensor(action, dtype=torch.int64)
-    actionTensor = torch.nn.functional.one_hot(actionTensor, num_classes=action_dim).float()
-    inputTensor = torch.cat((stateTensor,actionTensor),dim=0)
-    return inputTensor
-
-def plot(lossList):
-    matplotlib.pyplot.figure(figsize=(10, 6))
-    matplotlib.pyplot.plot(range(len(lossList)), lossList, marker='o')
-    matplotlib.pyplot.title('Loss over time')
-    matplotlib.pyplot.xlabel('Index')
-    matplotlib.pyplot.ylabel('Loss')
-    matplotlib.pyplot.show(block=True)
-
-def main():
+def cartPole(device,epoch,epsilon):
     env = gym.make('CartPole-v1')
-    global epsilon
     count = 0
-    finalLossList = []
-    stateDim = 1
-    for num in env.observation_space.shape:
-        stateDim = stateDim * num                           # The dimension of the state space is 4
-    in_dim = env.action_space.n + stateDim                  # For a better neural network model, the one-dimensional state space and action space input is passed through one_hot encoding to 4+4 dimensions
+    in_dim = env.observation_space.shape[0] + 1             # The dimension of the state space is 4, and plus action dim
     out_dim = 1                                             # For any (state,action) output a QValue
-    QNet = QNetwork.QNetwork(in_dim,out_dim)
-    optimizer = torch.optim.Adam(QNet.parameters(),lr=0.01)
 
-    for epi in range(5000):
+    QNet = QNetwork.QNetwork(in_dim,out_dim,device)
+    QNet.to(device)
+    optimizer = torch.optim.Adam(QNet.parameters(),lr=0.005)
+
+    for epi in range(epoch):
         state = env.reset()
         unwrappedState = state[0]
-        lossList = []
-        rewardList = []
         for i in range(200):
-            QValue = []
+            QValue = torch.empty(0).to(device)
             for action in range(env.action_space.n):
-                inputTensor = getTensor(unwrappedState,action,env.action_space.n)
-                QValue.append(QNet.forward(inputTensor).item())
+                inputTensor = torch.tensor(numpy.append(unwrappedState, action), dtype=torch.float32).to(QNet.device)
+                QValue = torch.cat((QValue, QNet.forward(inputTensor)), dim=0).to(device)
             if epsilon > numpy.random.rand():
                 action = env.action_space.sample()
             else:
-                action = QValue.index(max(QValue))
-            unwrappedState,reward,terminated, truncated, info = env.step(action)
-            rewardList.append(reward)
-            # nextInputTensor = getTensor(unwrappedState,action,env.action_space.n)
-            # nextQValue = QNet.forward(nextInputTensor)
-            # targetQValue = reward + gamma * nextQValue
-            # lossList.append(train(nextQValue,targetQValue,optimizer).item())
-            # epsilon = max(epsilon * 0.9995, 0.01)
+                action = torch.argmax(QValue).item()
+            unwrappedState,reward,terminated, truncated, _ = env.step(action)
+            QNet.rewards.append(reward)
+            QNet.QTable.append(QValue.clone())
             env.render()
             if terminated or truncated:
                 break
-        
-        
-        finalLoss = sum(lossList)
-        finalReward = sum(rewardList)
-        solved = finalReward > 195.0
+        loss = train(QNet,optimizer)
+        epsilon = max(epsilon * 0.999, 0.01)
+        total_reward = sum(QNet.rewards)
+        solved = total_reward > 195.0
+        QNet.onpolicy_reset()
+
         if solved:
             count = count + 1
-            finalLossList.append(finalLoss)
-            print(f'Episode {epi}, loss {finalLoss}, total_reward: {finalReward}, solved: {solved}')
-    print(count)
-    plot(finalLossList)
+        print(f'Episode {epi}, loss {loss}, total_reward: {total_reward}, solved: {solved}')
+    print(count/epoch)
+
+def main():
+    device = torch.device("cpu")
+    startTime = time.time()
+    cartPole(device,10000,0.9)
+    endTime = time.time()
+    print(endTime-startTime)
 
 if __name__ == '__main__':
     main()
