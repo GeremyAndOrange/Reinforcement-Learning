@@ -32,10 +32,10 @@ def cartPole(device,epoch):
 
     for epi in range(epoch):
         state = env.reset()
-        unwrapped_state = state[0]
+        nextState = state[0]
         for i in range(200):
-            action = policyNet.act(unwrapped_state)
-            unwrapped_state,reward,terminated, truncated, _ = env.step(action)
+            action = policyNet.act(nextState)
+            nextState,reward,terminated,truncated,_ = env.step(action)
             policyNet.rewards.append(reward)
             env.render()
             if terminated or truncated:

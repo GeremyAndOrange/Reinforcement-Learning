@@ -35,18 +35,18 @@ def frozenLake(device,epoch):
 
     for epi in range(epoch):
         state = env.reset()
-        unwrapped_state = state[0]
+        nextState = state[0]
         for i in range(20):
-            positionX, positionY = unwrapped_state//4, unwrapped_state%4
+            positionX, positionY = nextState//4, nextState%4
             action = policyNet.act([positionX,positionY])
-            unwrapped_state,reward,terminated, truncated, _ = env.step(action)
-            policyNet.rewards.append(getReward(unwrapped_state) + reward*100 - 3)
+            nextState,reward,terminated,truncated,_ = env.step(action)
+            policyNet.rewards.append(getReward(nextState) + reward*100 - 3)
             env.render()
             if terminated or truncated:
                 break
         loss = train(policyNet,optimizer)
         total_reward = sum(policyNet.rewards)
-        solved = (unwrapped_state == 15)
+        solved = (nextState == 15)
         policyNet.onpolicy_reset()
 
         if solved:

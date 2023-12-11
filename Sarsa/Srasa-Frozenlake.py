@@ -16,7 +16,7 @@ def frozenLake(epoch,epsilon,algorithmName):
             else:
                 thisAction = Q[nextState].index(max(Q[nextState]))
             thisState = nextState
-            nextState,reward,terminated, truncated, _ = env.step(thisAction)
+            nextState,reward,terminated,truncated,_ = env.step(thisAction)
             if epsilon > numpy.random.rand() or Q[nextState].count(Q[nextState][0]) == len(Q[nextState]):
                 nextAction = env.action_space.sample()
             else:
