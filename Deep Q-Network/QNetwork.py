@@ -14,7 +14,7 @@ class QNetwork(torch.nn.Module):
     
     def onpolicy_reset(self):
         self.rewards = []
-        self.QTable = []
+        self.loss = []
 
     def forward(self,x):
         return self.model(x)
