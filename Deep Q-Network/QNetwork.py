@@ -4,9 +4,9 @@ class QNetwork(torch.nn.Module):
     def __init__(self, in_dim,out_dim,device) -> None:
         super(QNetwork,self).__init__()
         Layers = [
-            torch.nn.Linear(in_dim,128),
+            torch.nn.Linear(in_dim,64),
             torch.nn.ReLU(),
-            torch.nn.Linear(128,out_dim),
+            torch.nn.Linear(64,out_dim),
             ]
         self.model = torch.nn.Sequential(*Layers)
         self.onpolicy_reset()
