@@ -3,19 +3,12 @@ import torch.nn
 class QNetwork(torch.nn.Module):
     def __init__(self, in_dim,out_dim,device) -> None:
         super(QNetwork,self).__init__()
-        updateLayers = [
-            torch.nn.Linear(in_dim,64),
+        Layers = [
+            torch.nn.Linear(in_dim,128),
             torch.nn.ReLU(),
-            torch.nn.Linear(64,out_dim),
+            torch.nn.Linear(128,out_dim),
             ]
-        delayLayers = [
-            torch.nn.Linear(in_dim,64),
-            torch.nn.ReLU(),
-            torch.nn.Linear(64,out_dim),
-        ]
-        self.model = torch.nn.Sequential(*updateLayers)
-        self.delayModel = torch.nn.Sequential(*delayLayers)
-        self.delayModel.load_state_dict(self.model.state_dict())
+        self.model = torch.nn.Sequential(*Layers)
         self.onpolicy_reset()
         self.device = device
     
@@ -25,6 +18,3 @@ class QNetwork(torch.nn.Module):
 
     def modelForward(self,x):
         return self.model(x)
-    
-    def delayModelFoward(self,x):
-        return self.delayModel(x)
