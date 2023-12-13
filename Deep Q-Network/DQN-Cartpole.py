@@ -6,7 +6,7 @@ import time
 import random
 
 def train(dataPool,QNet,optimizer,lossFunction):
-    trainData = random.sample(dataPool, 64)
+    trainData = random.sample(dataPool, 128)
     thisState = torch.tensor(numpy.array([data[0] for data in trainData]), dtype=torch.float32).to(QNet.device)
     thisAction = torch.tensor(numpy.array([data[1] for data in trainData]), dtype=torch.int64).to(QNet.device)
     reward = torch.tensor(numpy.array([data[2] for data in trainData]), dtype=torch.float32).to(QNet.device)
@@ -14,10 +14,10 @@ def train(dataPool,QNet,optimizer,lossFunction):
     over = torch.tensor(numpy.array([data[4] for data in trainData]), dtype=torch.int64).to(QNet.device)
 
     QValue = QNet.modelForward(thisState)
-    QValue = QValue[range(64), thisAction]
+    QValue = QValue[range(128), thisAction]
     with torch.no_grad():
         nextQValue = QNet.modelForward(nextState).max(dim=1)[0]
-    for i in range(64):
+    for i in range(128):
         nextQValue[i] = 0 if over[i] else nextQValue[i]
     loss = lossFunction(reward + 0.9 * nextQValue, QValue)
     optimizer.zero_grad()
@@ -34,14 +34,14 @@ def cartPole(device,epoch,epsilon):
 
     QNet = QNetwork.QNetwork(in_dim,out_dim,device)
     QNet.to(device)
-    optimizer = torch.optim.Adam(QNet.parameters(),lr=0.002)
+    optimizer = torch.optim.Adam(QNet.parameters(),lr=0.001)
     lossFunction = torch.nn.MSELoss()
 
     for epi in range(epoch):
+        epsilon = max(epsilon * 0.999, 0.01)
         # update dataPool
         dataNum = 0
         while dataNum < 200:
-            epsilon = max(epsilon * 0.999, 0.01)
             state = env.reset()
             nextState = state[0]
             over = False
@@ -60,7 +60,7 @@ def cartPole(device,epoch,epsilon):
             dataPool.pop(0)
 
         # off-line training
-        for trainNum in range(200):
+        for trainNum in range(100):
             loss = train(dataPool,QNet,optimizer,lossFunction)
             QNet.loss.append(loss.item())
         
@@ -93,7 +93,7 @@ def cartPole(device,epoch,epsilon):
 def main():
     device = torch.device("cpu")
     startTime = time.time()
-    cartPole(device,10000,0.9)
+    cartPole(device,200000,0.9)
     endTime = time.time()
     print(endTime-startTime)
 
