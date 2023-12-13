@@ -93,7 +93,7 @@ def cartPole(device,epoch,epsilon):
 def main():
     device = torch.device("cpu")
     startTime = time.time()
-    cartPole(device,200000,0.9)
+    cartPole(device,100000,0.9)
     endTime = time.time()
     print(endTime-startTime)
 
