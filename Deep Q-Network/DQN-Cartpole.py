@@ -87,7 +87,7 @@ def cartPole(device,epoch,epsilon):
         QNet.onpolicy_reset()
         if solved:
             count = count + 1
-        print(f'Episode {epi}, loss {total_loss}, total_reward: {total_reward}, solved: {solved}')
+            print(f'Episode {epi}, loss {total_loss}, total_reward: {total_reward}, solved: {solved}')
     print(count/epoch)
 
 def main():
