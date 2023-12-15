@@ -5,7 +5,6 @@ import numpy
 import torch
 import time
 
-
 def getAction(ACnet,state):
     state = torch.tensor(state, dtype=torch.float32).reshape(1,4).to(ACnet.device)
     prob = ACnet.ActorModel(state)
@@ -26,26 +25,26 @@ def getData(ACnet,env):
         thisState = nextState
 
     thisState = torch.tensor(numpy.array([data[0] for data in dataPool]), dtype=torch.float32).reshape(-1,4).to(ACnet.device)
-    thisAction = torch.tensor(numpy.array([data[1] for data in dataPool]), dtype=torch.int64).reshape(-1,1).to(ACnet.device)
-    reward = torch.tensor(numpy.array([data[2] for data in dataPool]), dtype=torch.float32).reshape(-1,1).to(ACnet.device)
+    reward = torch.tensor(numpy.array([data[1] for data in dataPool]), dtype=torch.float32).reshape(-1,1).to(ACnet.device)
+    thisAction = torch.tensor(numpy.array([data[2] for data in dataPool]), dtype=torch.int64).reshape(-1,1).to(ACnet.device)
     nextState = torch.tensor(numpy.array([data[3] for data in dataPool]), dtype=torch.float32).reshape(-1,4).to(ACnet.device)
     over = torch.tensor(numpy.array([data[4] for data in dataPool]), dtype=torch.int64).reshape(-1,1).to(ACnet.device)
-    return thisState, thisAction, reward, nextState, over
+    return thisState, reward, thisAction, nextState, over
 
 def cartPole(device,epoch):
     env = gym.make('CartPole-v1')
     count = 0
     in_dim = env.observation_space.shape[0]                 # The dimension of the state space is 4
-    out_dim = env.action_space.n                            # For any action output a QValue in this state
+    out_dim = env.action_space.n                            # For any action
 
     ACnet = ACNetWork.ACNetWork(in_dim,out_dim,device)
     ACnet.to(device)
     ActorOptimizer = torch.optim.Adam(ACnet.ActorModel.parameters(),lr=0.001)
-    CriticOptimizer = torch.optim.Adam(ACnet.CriticModel.parameters(),lr=0.001)
+    CriticOptimizer = torch.optim.Adam(ACnet.CriticModel.parameters(),lr=0.01)
     lossFunction = torch.nn.MSELoss()
 
     for epi in range(epoch):
-        thisState, thisAction, reward, nextState, over = getData(ACnet,env)
+        thisState, reward, thisAction, nextState, over = getData(ACnet,env)
         values = ACnet.CriticFarward(thisState)
         targets = ACnet.CriticFarward(nextState) * 0.9 * (1 - over) + reward
 
@@ -85,7 +84,7 @@ def cartPole(device,epoch):
         ACnet.onpolicy_reset()
         if solved:
             count = count + 1
-        print(f'Episode {epi}, loss {total_loss}, TDloss {total_TDloss}, total_reward: {total_reward}, solved: {solved}')
+            print(f'Episode {epi}, loss {total_loss}, TDloss {total_TDloss}, total_reward: {total_reward}, solved: {solved}')
     print(count/epoch)
 
 def main():

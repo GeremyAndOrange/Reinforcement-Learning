@@ -4,15 +4,15 @@ class ACNetWork(torch.nn.Module):
     def __init__(self, in_dim,out_dim,device) -> None:
         super(ACNetWork,self).__init__()
         ActorLayer = [
-            torch.nn.Linear(in_dim,64),
+            torch.nn.Linear(in_dim,128),
             torch.nn.ReLU(),
-            torch.nn.Linear(64,out_dim),
+            torch.nn.Linear(128,out_dim),
             torch.nn.Softmax(1),
         ]
         CriticLayer = [
-            torch.nn.Linear(in_dim,64),
+            torch.nn.Linear(in_dim,128),
             torch.nn.ReLU(),
-            torch.nn.Linear(64,1),
+            torch.nn.Linear(128,1),
         ]
         self.ActorModel = torch.nn.Sequential(*ActorLayer)
         self.CriticModel = torch.nn.Sequential(*CriticLayer)
